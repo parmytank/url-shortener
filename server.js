@@ -3,7 +3,6 @@ var MongoClient = mongodb.MongoClient;
 var url = process.env.MONGOLAB_URI;
 var express = require('express');
 var app = express();
-app.use(express.static('/new/'));
 
 MongoClient.connect(url, function (err, db) {
   if (err) {
@@ -12,68 +11,91 @@ MongoClient.connect(url, function (err, db) {
     console.log('Connection established to', url);
   }
   var urls = db.collection('urls');
-  function nextIndex(callback){
-      var array = [];
+  function url_array(callback){
       urls.find(
-            {}, {short_url:1, _id:0}
+            {}, {short_url:1, original_url:1, _id:0}
             ).toArray(function(err, item){ 
                 if (err) throw err;
-                for(var i=0;i<item.length;i++){
-                    array.push(item[i].short_url);
-                }
-                callback(array);
+                callback(item);
         })
     }
     
+    function unused_index(callback){
+        var i = 1;
+        url_array(function(array){
+            while(true){
+                for(var j = 0; j<array.length; j++){
+                    if(array[j].short_url == i){
+                        i++
+                        break;
+                    }
+                    if(j == array.length -1){
+                        callback(i);
+                        return;
+                    }
+                }
+            }
+        })
+    }
+    
+    
     app.use('/new/http://:input',function(req, res, next){
-        var input = req.params.input;
-        if(checkurl(input)){next();}
-        else{res.end('invalid')};
+        var check = checkurl(req, res, next);
     })
+    
+    app.use('/new/https://:input',function(req, res, next){
+        var check = checkurl(req, res, next);
+    })
+    
+    function checkurl(req, res, next){
+        var input = req.params.input;
+        if(input.substr(0,4) == 'www.' && 
+        input.substr(input.length - 4,4) == '.com'){return next();}
+        else{res.end('invalid address')};
+    }
 
     app.get('/', function(req,res){
-        var array = nextIndex(function(data){
-            console.log(data);
-        });
-        res.end('Welcome to the url-shortener service.');
+        url_array(function(arr){
+            res.end(JSON.stringify(arr));
+            res.end('Welcome to the url-shortener service.');
+        })
     })
     
     app.get('/new/http://:input', function(req, res){
-        var input = req.params.input;
-        var index = 1;
-        urls.insert({'original_url':input, 'short_url':index}, function(err, data){ 
-            if(err) console.log(err);
-            console.log(JSON.stringify(data.ops));
-            res.end(JSON.stringify(data.ops));
-            db.close();
-        });
-     
+        addSite(req,res, 'http://');
     })
+    app.get('/new/https://:input', function(req, res){
+        addSite(req,res, 'https://');
+    })
+    
+    function addSite(req, res, start){
+        var input = req.params.input;
+        unused_index(function(i){
+            var index = i;
+            var url = start + input;
+            urls.insert({'original_url':url, 'short_url':index}, function(err, data){ 
+                if(err) console.log(err);
+                console.log(JSON.stringify(data.ops));
+                res.end(JSON.stringify(data.ops));
+            });
+        })
+    }
        
     app.get('/:index',function(req, res){
         var index = parseInt(req.params.index);
-        var output = urls.find({
-            short_url: {$eq: index}
-        },
-        {
-            short_url:1,
-            original_url:1
-        }).toArray(function(err, docs){
-            if (err) throw err;
-            var new_url = 'https://' + docs[0].original_url;
-            res.redirect(new_url);
-        })    
+        url_array(function(array){
+            for(var i=0; i < array.length; i++){
+                if(array[i].short_url == index){
+                    console.log(array[i].original_url);
+                    res.redirect(array[i].original_url);
+                    return;
+                }
+            }
+        }) 
     })
     app.listen(process.env.PORT, process.env.IP);
     
     app.onbeforeunload = function (e) {db.close();}
-    
-    
-
   }
 );
 
-function checkurl(string){
-    if (string.substr(0,4) != 'www.'){return false;}
-    return true;
-}
