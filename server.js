@@ -6,13 +6,13 @@ var app = express();
 var path = require('path');
 
 MongoClient.connect(url, function (err, db) {
-  if (err) {
-    console.log('Unable to connect to the mongoDB server. Error:', err);
-  } else {
-    console.log('Connection established to', url);
-  }
-  var urls = db.collection('urls');
-  function url_array(callback){
+    if (err) {
+      console.log('Unable to connect to the mongoDB server. Error:', err);
+    } else {
+      console.log('Connection established to', url);
+    }
+    var urls = db.collection('urls');
+   function url_array(callback){
       urls.find(
             {}, {short_url:1, original_url:1, _id:0}
             ).toArray(function(err, item){ 
@@ -62,6 +62,7 @@ MongoClient.connect(url, function (err, db) {
             //res.end();
         })
     })
+    
     app.get('/list', function(req,res){
         url_array(function(arr){
             res.write(JSON.stringify(arr));
@@ -72,6 +73,7 @@ MongoClient.connect(url, function (err, db) {
     app.get('/new/http://:input', function(req, res){
         addSite(req,res, 'http://');
     })
+    
     app.get('/new/https://:input', function(req, res){
         addSite(req,res, 'https://');
     })
@@ -101,6 +103,7 @@ MongoClient.connect(url, function (err, db) {
             }
         }) 
     })
+    
     app.listen(process.env.PORT, process.env.IP);
     
     app.onbeforeunload = function (e) {db.close();}
