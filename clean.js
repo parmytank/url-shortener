@@ -3,6 +3,10 @@ var MongoClient = mongodb.MongoClient;
 var url = 'mongodb://parmytank:1qaz!QAZ@ds023485.mlab.com:23485/url-shortener';
 var express = require('express');
 var app = express();
+var arr = process.argv[2];
+for(var i = 0; i < arr.length; i++){
+    arr[i] = parseInt(arr[i]);
+}
 
 MongoClient.connect(url, function (err, db) {
   if (err) {
@@ -23,7 +27,7 @@ MongoClient.connect(url, function (err, db) {
     url_array(function(data){
         console.log(data);
         //console.log('Enter short_url to delete');
-        var arr = [];
+        console.log(arr);
         urls.remove({
             short_url: {$in: arr}
         })

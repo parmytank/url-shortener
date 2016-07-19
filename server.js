@@ -3,6 +3,7 @@ var MongoClient = mongodb.MongoClient;
 var url = process.env.MONGOLAB_URI;
 var express = require('express');
 var app = express();
+var path = require('path');
 
 MongoClient.connect(url, function (err, db) {
   if (err) {
@@ -38,7 +39,6 @@ MongoClient.connect(url, function (err, db) {
         })
     }
     
-    
     app.use('/new/http://:input',function(req, res, next){
         var check = checkurl(req, res, next);
     })
@@ -51,13 +51,21 @@ MongoClient.connect(url, function (err, db) {
         var input = req.params.input;
         if(input.substr(0,4) == 'www.' && 
         input.substr(input.length - 4,4) == '.com'){return next();}
-        else{res.end('invalid address')};
+        else{res.end('invalid address: url must be of "http://www.example.com"'
+        + 'or "https://www.example.com" format')};
     }
 
     app.get('/', function(req,res){
         url_array(function(arr){
-            res.end(JSON.stringify(arr));
-            res.end('Welcome to the url-shortener service.');
+            res.sendFile(path.join(__dirname +'/intro.html'));
+            //res.write(JSON.stringify(arr));
+            //res.end();
+        })
+    })
+    app.get('/list', function(req,res){
+        url_array(function(arr){
+            res.write(JSON.stringify(arr));
+            res.end();
         })
     })
     
