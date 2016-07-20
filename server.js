@@ -88,26 +88,35 @@ MongoClient.connect(url, function (err, db) {
     })
     
     function addSite(req, res, start){
-        var input = req.params.input;
+        var new_url = start + req.params.input;
+        checkSite(res,new_url,function(res, new_url){
+            insertSite(res,new_url);
+        });
+       
+    }
+    function checkSite(res, new_url, callback){
+        var exists = false;
         
         //check if url already in database
         url_array(function(data){
             for(var i = 0; i<data.length; i++){
-                if(data[i].original_url === start + input){
+                if(data[i].original_url === new_url){
+                    exists = true;
                     res.end('url already in database: ' + JSON.stringify(data[i]));
                     return;
                 }
             }
+            if(!exists){callback(res, new_url);}
         })
-        
-        //add to database
+    }
+    
+    function insertSite(res, new_url){
         unused_index(function(i){
             var index = i;
-            var url = start + input;
-            urls.insert({'original_url':url, 'short_url':index}, function(err, data){ 
+            urls.insert({'original_url':new_url, 'short_url':index}, function(err, data){ 
                 if(err) console.log(err);
-                console.log(JSON.stringify(data.ops));
-                res.end(JSON.stringify(data.ops));
+                res.write('url already in database\n');
+                res.end('original_url:' + data.ops[0].original_url + ', short_url:' + data.ops[0].short_url);
             });
         })
     }
