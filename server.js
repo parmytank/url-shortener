@@ -71,8 +71,11 @@ MongoClient.connect(url, function (err, db) {
             arr.sort(function(a,b){
                 return a.short_url - b.short_url;
             })
-            res.write(JSON.stringify(arr));
-            res.end();
+            res.write('<html><body><table><tr><th>Original URL</th><th>Short URL</th></tr>')
+            for(var i = 0; i<arr.length; i++){
+                res.write('<tr><td>' + arr[i].original_url + '</td><td>' + arr[i].short_url + '</td></tr>')
+            }
+            res.end('</table></body></html>');
         })
     })
     
