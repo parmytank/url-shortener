@@ -89,12 +89,10 @@ MongoClient.connect(url, function (err, db) {
     
     function addSite(req, res, start){
         var new_url = start + req.params.input;
-        checkSite(res,new_url,function(res, new_url){
-            insertSite(res,new_url);
-        });
+        checkSite(res,new_url);
        
     }
-    function checkSite(res, new_url, callback){
+    function checkSite(res, new_url){
         var exists = false;
         
         //check if url already in database
@@ -105,8 +103,10 @@ MongoClient.connect(url, function (err, db) {
                     res.end('url already in database: ' + JSON.stringify(data[i]));
                     return;
                 }
+                if(i==data.length-1 && !exists){
+                    insertSite(res, new_url);
+                }
             }
-            if(!exists){callback(res, new_url);}
         })
     }
     
@@ -115,7 +115,6 @@ MongoClient.connect(url, function (err, db) {
             var index = i;
             urls.insert({'original_url':new_url, 'short_url':index}, function(err, data){ 
                 if(err) console.log(err);
-                res.write('url already in database\n');
                 res.end('original_url:' + data.ops[0].original_url + ', short_url:' + data.ops[0].short_url);
             });
         })
