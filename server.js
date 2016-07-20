@@ -12,6 +12,8 @@ MongoClient.connect(url, function (err, db) {
       console.log('Connection established to', url);
     }
     var urls = db.collection('urls');
+    
+    //passes array of original and short urls to the callback function
    function url_array(callback){
       urls.find(
             {}, {short_url:1, original_url:1, _id:0}
@@ -21,6 +23,7 @@ MongoClient.connect(url, function (err, db) {
         })
     }
     
+    //finds the lowest unused index
     function unused_index(callback){
         var i = 1;
         url_array(function(array){
@@ -65,6 +68,9 @@ MongoClient.connect(url, function (err, db) {
     
     app.get('/list', function(req,res){
         url_array(function(arr){
+            arr.sort(function(a,b){
+                return a.short_url - b.short_url;
+            })
             res.write(JSON.stringify(arr));
             res.end();
         })
@@ -80,6 +86,18 @@ MongoClient.connect(url, function (err, db) {
     
     function addSite(req, res, start){
         var input = req.params.input;
+        
+        //check if url already in database
+        url_array(function(data){
+            for(var i = 0; i<data.length; i++){
+                if(data[i].original_url === start + input){
+                    res.end('url already in database: ' + JSON.stringify(data[i]));
+                    return;
+                }
+            }
+        })
+        
+        //add to database
         unused_index(function(i){
             var index = i;
             var url = start + input;
